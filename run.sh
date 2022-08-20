@@ -3,11 +3,17 @@ set -euo pipefail
 
 echo "Configured to sync from ${SOURCE_FOLDER} to ${TARGET_GIT_URL}"
 TARGET_FOLDER=/tmp/target
-git clone ${TARGET_GIT_URL} ${TARGET_FOLDER}
-cd ${TARGET_FOLDER}
+if [ -d ${TARGET_FOLDER} ]
+then
+    cd ${TARGET_FOLDER}
+    git pull
+else
+    git clone ${TARGET_GIT_URL} ${TARGET_FOLDER}
+    cd ${TARGET_FOLDER}
+fi
 
 sync() {
-    rsync -av --delete --exclude=.git ${SOURCE_FOLDER}/ ${TARGET_FOLDER}
+    rsync -av --chown root:root --delete --exclude=.git ${SOURCE_FOLDER}/ ${TARGET_FOLDER}
     if [ $(git status --porcelain | wc -l) -eq "0" ]; then
         echo "No changes to commit"
     else

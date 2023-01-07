@@ -2,6 +2,9 @@
 set -euo pipefail
 
 TASK=${TASK:-sync}
+GIT_DIR=${GIT_DIR:-/tmp/target}
+SOURCE_UID=${SOURCE_UID:-root}
+SOURCE_GID=${SOURCE_GID:-$SOURCE_UID}
 
 while getopts "osr" option; do
     case $option in
@@ -21,19 +24,18 @@ while getopts "osr" option; do
    esac
 done
 
-echo "Configured to sync from ${SOURCE_FOLDER} to ${TARGET_GIT_URL}"
-TARGET_FOLDER=/tmp/target
-if [ ! -d ${TARGET_FOLDER} ]
+echo "Configured to sync from ${SOURCE_DIR} to ${TARGET_GIT_URL}"
+if [ ! -d ${GIT_DIR} ]
 then
-    echo "Cloning repo ${TARGET_GIT_URL} to ${TARGET_FOLDER}..."
-    git clone ${TARGET_GIT_URL} ${TARGET_FOLDER}
+    echo "Cloning repo ${TARGET_GIT_URL} to ${GIT_DIR}..."
+    git clone ${TARGET_GIT_URL} ${GIT_DIR}
 else
-    echo "Repo already exists at ${TARGET_FOLDER}."
+    echo "Repo already exists at ${GIT_DIR}."
 fi
-cd ${TARGET_FOLDER}
+cd ${GIT_DIR}
 
 sync() {
-    rsync -av --chown root:root --delete --exclude=.git ${SOURCE_FOLDER}/ ${TARGET_FOLDER}
+    rsync -av --chown root:root --delete --exclude=.git ${SOURCE_DIR}/ ${GIT_DIR}
     if [ $(git status --porcelain | wc -l) -eq "0" ]; then
         echo "No changes to commit"
     else
@@ -48,7 +50,7 @@ sync() {
 
 restore() {
     echo "Restoring..."
-    rsync -av --chown ${UID:-root}:${GID:-root} --delete --exclude=.git ${TARGET_FOLDER}/ ${SOURCE_FOLDER}
+    rsync -av --chown ${SOURCE_UID}:${SOURCE_GID} --delete --exclude=.git ${GIT_DIR}/ ${SOURCE_DIR}
 }
 
 case $TASK in
